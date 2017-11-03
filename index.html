@@ -145,8 +145,6 @@ function initMap() {
     map.setZoom(parseFloat(""));
   }
 
-
-
   
   var viewCityNameUI = document.createElement('div');
   viewCityNameUI.id = 'viewCityNameUI';
@@ -260,12 +258,6 @@ function initMap() {
     loadGeoJson('./nakagyo.geojson', {idPropertyName : 'nakagyo' }),
     loadGeoJson('./shimogyo.geojson', {idPropertyName : 'shimogyo'}),
     loadGeoJson('./kamigyo.geojson', {idPropertyName : 'kamigyo'})
-
-    
-    
-    
-    
-    
   ).done(function(){
     loadingView(false);
   });
