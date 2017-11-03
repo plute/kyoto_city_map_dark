@@ -257,9 +257,9 @@ function initMap() {
         keycode[d[i].id] = d[i].name; 
       }
     }),
-    loadGeoJson('/style/city/nakagyo.geojson', {idPropertyName : 'nakagyo' }),
-    loadGeoJson('/style/city/shimogyo.geojson', {idPropertyName : 'shimogyo'}),
-    loadGeoJson('/style/city/kamigyo.geojson', {idPropertyName : 'kamigyo'})
+    loadGeoJson('./nakagyo.geojson', {idPropertyName : 'nakagyo' }),
+    loadGeoJson('./shimogyo.geojson', {idPropertyName : 'shimogyo'}),
+    loadGeoJson('./kamigyo.geojson', {idPropertyName : 'kamigyo'})
 
     
     
