@@ -1,0 +1,339 @@
+
+<!DOCTYPE HTML>
+<html lang="ja-JP">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta http-equiv="Content-Script-Type" content="text/javascript" />
+  <meta charset="UTF-8">
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@ag3nkyoto">
+  <meta name="twitter:creator" content="@ag3nkyoto">
+  <meta name="twitter:title" content="京都町名マップ">
+  <meta name="twitter:description" content="京都は町がたくさん！上京区(577町)中京区(498町)下京区(511町)を表示します！">
+  <meta name="twitter:image" content="https://kyoto-kanko.appspot.com/style/city/thumbnail.png">
+  <link rel="stylesheet" href="/style/icomoon/style.css" type="text/css" media="all" />
+  <link rel="stylesheet" href="/style/semantic.min.css" type="text/css" media="all" />
+  <script src="/style/semantic.min.js"></script>
+  <script src="/style/jquery-3.1.1.min.js"></script>
+  <script src="/style/semantic.min.js"></script>
+  <script type="text/javascript">
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-88748609-1', 'auto');
+    ga('send', 'pageview');
+    function ShareEvent(action,id){
+      var eventAction = action;
+      var eventLabel = id;
+      ga('send', 'event', 'City', eventAction, eventLabel);    
+    }
+  </script>
+  <title>京都町名マップ</title>
+
+    <style type="text/css">
+      html, body { height: 100%; margin: 0; padding: 0; }
+      #map { height: 86%; }
+      #ad { height: 14%; }
+
+#viewCityNameUI {
+  background-color: #fff;
+  border: 2px solid #fff;
+  border-radius: 3px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.3);
+  cursor: pointer;
+  float: left;
+  margin-bottom: 22px;
+  text-align: center;
+}
+
+#viewCityNameText {
+  color: rgb(25,25,25);
+  font-family: Roboto,Arial,sans-serif;
+  font-size: 25px;
+  line-height: 35px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#viewTwitterUI {
+  background-color: #fff;
+  border: 2px solid #fff;
+  border-radius: 3px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.3);
+  cursor: pointer;
+  float: left;
+  margin-bottom: 22px;
+  text-align: center;
+}
+
+#loading-view {
+  
+ width: 100%;
+ height: 100%;
+ z-index: 9999;
+ position: fixed;
+ top: 0;
+ left: 0;
+  
+ background-color: #000000;
+ filter: alpha(opacity=85);
+ -moz-opacity: 0.85;
+ -khtml-opacity: 0.85;
+ opacity: 0.85;
+ background-image: url(/style/city/loading.png);
+ background-position: center center;
+ background-repeat: no-repeat;
+ background-attachment: fixed;
+}
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div id="ad">
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-1752618568635074"
+     data-ad-slot="4334545745"
+     data-ad-format="auto"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAE8UYfTeTHxxQJ3rcfrXAkmtOJnxBaf3U&libraries=visualization&callback=initMap">
+    </script>
+
+<script>
+var map;
+var cityName = "";
+var cityCode = "";
+var tDiv = false;
+
+function loadingView(flag) {
+  $('#loading-view').remove();
+  if(!flag) return;
+  $('<div id="loading-view" />').appendTo('body');
+}
+
+
+function loadGeoJson(url, options){
+  var dfd = $.Deferred();
+  try {
+      map.data.loadGeoJson(url, options, function (features) {
+          dfd.resolve();
+      });
+  } catch (e) {
+      dfd.reject();
+  }
+  return dfd.promise();
+}
+
+function initMap() {
+  map = new google.maps.Map(document.getElementById('map'), {
+    gestureHandling: 'greedy',
+    center: {lat: 35.0254135, lng: 135.7621246,},
+    zoom: 15
+  });
+  if ("" != "" && "" != "" && "" != ""){
+    map.setCenter({lat: parseFloat(""), lng: parseFloat(""),});
+    map.setZoom(parseFloat(""));
+  }
+
+
+
+  
+  var viewCityNameUI = document.createElement('div');
+  viewCityNameUI.id = 'viewCityNameUI';
+  viewCityNameUI.title = 'ここに町名が表示されます';
+
+  
+  var viewCityNameText = document.createElement('div');
+  viewCityNameText.id = 'viewCityNameText';
+  viewCityNameText.innerHTML = '🐥京都町名マップ🐥';
+  viewCityNameUI.appendChild(viewCityNameText);
+
+  viewCityNameUI.index = 1;
+  viewCityNameUI.style['margin-top'] = '50px';
+  viewCityNameUI.style['width'] = '250px';
+  map.controls[google.maps.ControlPosition.TOP_CENTER].push(viewCityNameUI);
+
+
+  
+  var twitterDiv = document.createElement('div');
+  twitterDiv.id = 'viewTwitterUI';
+  twitterDiv.style['margin-right'] = '10px';
+  twitterDiv.style['margin-top'] = '10px';
+
+  var twitterButton = document.createElement('button');
+  twitterButton.onclick = function(){
+    if(tDiv){
+      
+      map.controls[google.maps.ControlPosition.RIGHT_TOP].pop();
+      tDiv = false;
+    } else {
+      
+      var twitterDiv = document.createElement('div');
+      twitterDiv.id = 'viewTwitterUI';
+      twitterDiv.style['margin-right'] = '10px';
+
+      var twitterheader = document.createElement('h3');
+      twitterheader.className = "ui header";
+      twitterheader.innerHTML = "サンプル";
+      twitterDiv.appendChild(twitterheader);
+
+      var twitterDemo = document.createElement('img');
+      twitterDemo.className = "ui medium image";
+      twitterDemo.src = "/style/city/twitterdemo.png";
+      twitterDiv.appendChild(twitterDemo);
+
+      var twitterButton = document.createElement('button');
+      twitterButton.className = "ui icon twitter button";
+      twitterButton.innerHTML = "ツイートする";
+      twitterButton.onclick = function(){
+        ShareEvent("Twitter", cityCode);
+
+        var latlng = map.getCenter();
+        var zoom = map.getZoom();
+
+        
+        var urlHead = "https://twitter.com/intent/tweet?text=";
+        var urlStr1 = cityName + "周辺　⛩京都町名マップ⛩";
+        var urlStr2 = "https://kyoto-kanko.appspot.com/city/" + latlng.lat() + "/" + latlng.lng() + "/" + zoom + "/" + cityCode;
+
+        location.href = urlHead + encodeURIComponent(urlStr1) + '%0A' + encodeURIComponent(urlStr2);
+      }
+      twitterDiv.appendChild(twitterButton);
+
+      var twitterI = document.createElement('i');
+      twitterI.className = 'twitter icon';
+      twitterButton.appendChild(twitterI);
+
+      var cancenButton = document.createElement('button');
+      cancenButton.className = "ui icon button";
+      cancenButton.onclick = function(){
+        map.controls[google.maps.ControlPosition.RIGHT_TOP].pop();
+      }
+      twitterDiv.appendChild(cancenButton);
+
+      var cancenI = document.createElement('i');
+      cancenI.className = 'remove icon';
+      cancenButton.appendChild(cancenI);
+
+
+      map.controls[google.maps.ControlPosition.RIGHT_TOP].push(twitterDiv);
+      tDiv = true;
+    }
+  }; 
+
+  twitterButton.className = "ui icon twitter button";
+  twitterDiv.appendChild(twitterButton);
+
+  var twitterI = document.createElement('i');
+  twitterI.className='twitter icon';
+  twitterButton.appendChild(twitterI);
+
+  var dropdownI = document.createElement('i');
+  dropdownI.className='dropdown icon';
+  twitterButton.appendChild(dropdownI);
+
+  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(twitterDiv);
+
+  var keycode = {};
+  var cnt = 0;
+  var rand = 0;
+  var rand2 = 0;
+  var last_rand;
+
+  $.when(
+    loadingView(true),
+    $.getJSON("/style/city/kyoto_city_name.json", function(d){
+      for(var i=0; i<d.length; i++){
+        keycode[d[i].id] = d[i].name; 
+      }
+    }),
+    loadGeoJson('/style/city/nakagyo.geojson', {idPropertyName : 'nakagyo' }),
+    loadGeoJson('/style/city/shimogyo.geojson', {idPropertyName : 'shimogyo'}),
+    loadGeoJson('/style/city/kamigyo.geojson', {idPropertyName : 'kamigyo'})
+
+    
+    
+    
+    
+    
+  ).done(function(){
+    loadingView(false);
+  });
+
+map.data.addListener('addfeature', function(event) {
+    cnt = cnt + 1;
+    rand = (3847 + cnt * 19) % 3 ;
+
+    if (last_rand == rand) {
+       if(rand == 2) rand = 0;
+       else rand = rand + 1;
+    }
+    var code = event.feature.f.KEY_CODE;
+    event.feature.setProperty('cityCode', code);
+    event.feature.setProperty('cityName', keycode[code]);
+
+    if (rand == 0) {
+      event.feature.setProperty('color', 'green');
+    } else if (rand == 1) {
+      event.feature.setProperty('color', 'blue');
+    } else if (rand == 2) {
+      event.feature.setProperty('color', 'red');
+    } 
+    if (rand == rand2) rand2 = rand2 + 2;
+    var opa2 = 0.1 + 0.05 * rand2;
+     event.feature.setProperty('opa', opa2);
+
+     last_rand = rand;
+    rand2 = rand2 + 1;
+    if (rand2 > 6) rand2 = 0;
+
+    
+    if( code == Number("") ){
+       map.data.overrideStyle(event.feature, {strokeWeight: 8, fillOpacity: 0.3});
+       viewCityNameText.innerHTML = event.feature.getProperty('cityName');
+       cityName = event.feature.getProperty('cityName');
+       cityCode = Number("");
+    }
+
+});
+
+
+  map.data.setStyle(function(feature) {
+      color = feature.getProperty('color');
+      opa = feature.getProperty('opa');
+    return  ({
+      fillColor: color,
+      strokeColor: color,
+      fillOpacity: opa,
+      strokeWeight: 1
+    });
+  });
+
+  map.data.addListener('click', function(event) {
+    map.data.revertStyle();
+    map.data.overrideStyle(event.feature, {strokeWeight: 8});
+    cityName = event.feature.getProperty('cityName');
+    cityCode = event.feature.getProperty('cityCode');
+    console.log(event.feature.getProperty('cityName'));
+    viewCityNameText.innerHTML = event.feature.getProperty('cityName');
+  });
+
+  
+  
+  
+
+} 
+</script>
+
+  </body>
+</html>
